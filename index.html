@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Brilex - Prototype</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
+    h2 { color: #333; }
+    .box { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+    input, button { padding: 8px; margin: 5px 0; width: 100%; }
+    button { background: #007bff; color: #fff; border: none; cursor: pointer; border-radius: 5px;}
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+  </style>
+</head>
+<body>
+
+<h1>📦 Brilex - Gestion Produits & Factures</h1>
+
+<!-- ✅ Section Ajout Produit -->
+<div class="box">
+  <h2>➕ Ajouter un Produit</h2>
+  <label>Scanner Code-Barres:</label>
+  <input type="text" id="barcodeInput" placeholder="Scannez ou entrez le code...">
+  <label>Nom du Produit:</label>
+  <input type="text" id="productName" placeholder="Nom du produit">
+  <label>Couleur:</label>
+  <input type="text" id="productColor" placeholder="Couleur">
+  <label>Prix (DA):</label>
+  <input type="number" id="productPrice" placeholder="Prix">
+  <button onclick="addProduct()">Ajouter Produit</button>
+</div>
+
+<!-- ✅ Section Créer Facture -->
+<div class="box">
+  <h2>🧾 Créer Facture</h2>
+  <label>Nom Client:</label>
+  <input type="text" id="clientName" placeholder="Nom du client">
+  <label>Adresse Client:</label>
+  <input type="text" id="clientAddress" placeholder="Adresse du client">
+  <label>Scanner Code-Barres Produit:</label>
+  <input type="text" id="scanBarcode" placeholder="Scannez un produit">
+  <button onclick="addToInvoice()">Ajouter au Panier</button>
+  <table id="invoiceTable">
+    <thead>
+      <tr><th>Produit</th><th>Couleur</th><th>Prix</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <h3>Total: <span id="total">0</span> DA</h3>
+  <button onclick="saveInvoice()">✅ Enregistrer Facture</button>
+</div>
+
+<script>
+let products = JSON.parse(localStorage.getItem("products")) || [];
+let invoiceItems = [];
+
+// ✅ Ajouter produit dans la base locale
+function addProduct() {
+  let code = document.getElementById("barcodeInput").value.trim();
+  let name = document.getElementById("productName").value.trim();
+  let color = document.getElementById("productColor").value.trim();
+  let price = parseFloat(document.getElementById("productPrice").value);
+
+  if (!code || !name || !color || !price) {
+    alert("⚠️ Remplissez tous les champs!");
+    return;
+  }
+
+  products.push({ code, name, color, price });
+  localStorage.setItem("products", JSON.stringify(products));
+  alert("✅ Produit ajouté avec succès!");
+}
+
+// ✅ Ajouter produit scanné dans la facture
+function addToInvoice() {
+  let scan = document.getElementById("scanBarcode").value.trim();
+  let product = products.find(p => p.code === scan);
+  if (!product) {
+    alert("❌ Produit non trouvé! Ajoutez-le d'abord dans la base.");
+    return;
+  }
+  invoiceItems.push(product);
+  renderInvoice();
+}
+
+// ✅ Afficher les produits dans la facture
+function renderInvoice() {
+  let tbody = document.querySelector("#invoiceTable tbody");
+  tbody.innerHTML = "";
+  let total = 0;
+  invoiceItems.forEach(p => {
+    tbody.innerHTML += `<tr><td>${p.name}</td><td>${p.color}</td><td>${p.price}</td></tr>`;
+    total += p.price;
+  });
+  document.getElementById("total").innerText = total;
+}
+
+// ✅ Enregistrer la facture (simulation)
+function saveInvoice() {
+  let client = document.getElementById("clientName").value.trim();
+  let address = document.getElementById("clientAddress").value.trim();
+  if (!client || !address || invoiceItems.length === 0) {
+    alert("⚠️ Remplissez toutes les infos et ajoutez au moins un produit!");
+    return;
+  }
+  alert(`✅ Facture enregistrée pour ${client} (${address}) avec ${invoiceItems.length} produit(s).`);
+  invoiceItems = [];
+  renderInvoice();
+}
+</script>
+
+</body>
+  </html>
