@@ -1,152 +1,172 @@
-<!DOCTYPE html>
-<html lang="fr">
+<!DOCTYPE html><html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Brilex - Gestion des Ventes</title>
-<style>
-  body { font-family: Arial; background:#f3f3f3; margin:0; padding:0;}
-  header { background:#007bff; color:white; padding:10px; text-align:center;}
-  nav { display:flex; justify-content:space-around; background:#ddd; }
-  nav button { flex:1; padding:10px; border:none; background:#ccc; font-weight:bold; cursor:pointer;}
-  .active { background:#007bff; color:white;}
-  section { display:none; padding:15px;}
-  .box { background:white; padding:10px; border-radius:8px; margin-bottom:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
-  input, select { width:95%; padding:7px; margin:5px 0;}
-  button { padding:7px 10px; background:#007bff; color:white; border:none; border-radius:5px; margin:5px 0; cursor:pointer;}
-  table { width:100%; border-collapse:collapse; margin-top:10px;}
-  th,td { border:1px solid #ccc; padding:6px; text-align:center;}
-  #scanner { width:100%; height:200px; border:2px solid #007bff; display:none; margin-top:10px;}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brilex App</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f4;
+      color: #333;
+    }
+    nav {
+      display: flex;
+      justify-content: space-around;
+      background: #007BFF;
+      padding: 10px;
+    }
+    nav button {
+      flex: 1;
+      padding: 12px;
+      background: #007BFF;
+      color: white;
+      border: none;
+      font-size: 16px;
+    }
+    nav button.active {
+      background: #0056b3;
+    }
+    section {
+      display: none;
+      padding: 15px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    .invoice {
+      border: 1px solid #ccc;
+      padding: 10px;
+      background: white;
+    }
+    .invoice-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+    @media screen and (max-width: 600px) {
+      nav button { font-size: 14px; padding: 8px; }
+    }
+  </style>
 </head>
 <body>
-
-<header><h2>📦 Brilex - Gestion des Ventes</h2></header>
-
-<nav>
-  <button class="active" onclick="showSection(event,'produits')">Produits</button>
-  <button onclick="showSection(event,'facture')">Facturation</button>
-  <button onclick="showSection(event,'analyse')">Analyse</button>
-</nav>
-
-<!-- ✅ Section Produits -->
-<section id="produits" style="display:block;">
-  <div class="box">
-    <h3>➕ Ajouter Produit</h3>
-    <input id="barcodeInput" placeholder="Code-barres">
-    <button onclick="startScanner('barcodeInput')">📷 Scanner</button>
-    <input id="productName" placeholder="Nom">
-    <input id="productColor" placeholder="Couleur">
-    <input id="productPrice" type="number" placeholder="Prix (DA)">
-    <button onclick="addProduct()">✅ Enregistrer Produit</button>
-  </div>
-  <div class="box">
-    <h3>📋 Liste Produits</h3>
-    <table id="productsTable"><thead><tr><th>Code</th><th>Nom</th><th>Prix</th></tr></thead><tbody></tbody></table>
-  </div>
-</section>
-
-<!-- ✅ Section Facturation -->
-<section id="facture">
-  <div class="box">
-    <h3>🧾 Créer Facture</h3>
-    <input id="clientName" placeholder="Nom Client">
-    <input id="clientAddress" placeholder="Adresse Client">
-    <input id="scanBarcode" placeholder="Code Produit">
-    <button onclick="startScanner('scanBarcode')">📷 Scanner</button>
-    <button onclick="addToInvoice()">➕ Ajouter au Panier</button>
-    <table id="invoiceTable"><thead><tr><th>Produit</th><th>Prix</th></tr></thead><tbody></tbody></table>
-    <h4>Total: <span id="total">0</span> DA</h4>
-    <label>Statut Paiement:</label>
-    <select id="paymentStatus">
-      <option value="payé">✅ Payé</option>
-      <option value="dette">❌ Dette</option>
+  <nav>
+    <button class="active" onclick="showSection(event,'produits')">Produits</button>
+    <button onclick="showSection(event,'facture')">Facturation</button>
+    <button onclick="showSection(event,'analyse')">Analyse</button>
+  </nav>  <section id="produits" style="display:block">
+    <h2>Ajouter un produit</h2>
+    <input type="text" placeholder="Scanner le code-barres" id="barcode" />
+    <input type="text" placeholder="Nom du produit" id="nomProduit" />
+    <input type="text" placeholder="Couleur" id="couleurProduit" />
+    <input type="number" placeholder="Prix" id="prixProduit" />
+    <button onclick="ajouterProduit()">Ajouter</button>
+    <div id="listeProduits"></div>
+  </section>  <section id="facture">
+    <h2>Nouvelle Facture</h2>
+    <input type="text" placeholder="Nom du client" id="clientNom" />
+    <input type="text" placeholder="Adresse ou emplacement" id="clientAdresse" />
+    <input type="text" placeholder="Code-barres produit" id="factureBarcode" />
+    <button onclick="ajouterALaFacture()">Ajouter produit</button>
+    <div class="invoice" id="factureDetail"></div>
+    <label for="paiementSelect">État de paiement</label>
+    <select id="paiementSelect">
+      <option value="payee">Payée</option>
+      <option value="dette">Dette</option>
     </select>
-    <button onclick="saveInvoice()">💾 Enregistrer Facture</button>
-    <button onclick="printInvoice()">🖨️ Imprimer Facture</button>
-  </div>
-</section>
+    <button onclick="imprimerFacture()">Imprimer Facture</button>
+  </section>  <section id="analyse">
+    <h2>Analyse des ventes</h2>
+    <div id="salesSummary"></div>
+  </section>  <script>
+    let produits = JSON.parse(localStorage.getItem("produits") || "[]");
+    let factureItems = [];
 
-<!-- ✅ Section Analyse -->
-<section id="analyse">
-  <div class="box">
-    <h3>📊 Ventes Journalières</h3>
-    <table id="salesTable"><thead><tr><th>Date</th><th>Client</th><th>Total</th><th>Statut</th></tr></thead><tbody></tbody></table>
-  </div>
-</section>
+    function showSection(e, id) {
+      document.querySelectorAll("section").forEach(s => s.style.display = "none");
+      document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+      document.getElementById(id).style.display = "block";
+      e.target.classList.add("active");
+      if (id === 'produits') renderProducts();
+      if (id === 'analyse') renderSales();
+    }
 
-<!-- ✅ Scanner -->
-<div id="scanner"></div>
+    function ajouterProduit() {
+      const p = {
+        code: document.getElementById("barcode").value,
+        nom: document.getElementById("nomProduit").value,
+        couleur: document.getElementById("couleurProduit").value,
+        prix: parseFloat(document.getElementById("prixProduit").value)
+      };
+      produits.push(p);
+      localStorage.setItem("produits", JSON.stringify(produits));
+      renderProducts();
+    }
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-<script>
-let products = JSON.parse(localStorage.getItem("products")) || [];
-let invoices = JSON.parse(localStorage.getItem("invoices")) || [];
-let invoiceItems = [];
+    function renderProducts() {
+      const container = document.getElementById("listeProduits");
+      container.innerHTML = produits.map(p => `<div>${p.code} - ${p.nom} (${p.couleur}) - ${p.prix} DA</div>`).join("");
+    }
 
-// ✅ Navigation
-function showSection(e,id) {
-  document.querySelectorAll("section").forEach(s=>s.style.display="none");
-  document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
-  document.getElementById(id).style.display="block";
-  e.target.classList.add("active");
-  if(id==="produits") renderProducts();
-  if(id==="analyse") renderSales();
-}
+    function ajouterALaFacture() {
+      const code = document.getElementById("factureBarcode").value;
+      const produit = produits.find(p => p.code === code);
+      if (produit) {
+        factureItems.push(produit);
+        renderFacture();
+      } else {
+        alert("Produit introuvable !");
+      }
+    }
 
-// ✅ Produits
-function addProduct(){
-  let code=barcodeInput.value.trim(),name=productName.value.trim(),color=productColor.value.trim(),price=parseFloat(productPrice.value);
-  if(!code||!name||!price){alert("⚠️ Remplir tous les champs!");return;}
-  products.push({code,name,color,price});
-  localStorage.setItem("products",JSON.stringify(products));
-  renderProducts();alert("✅ Produit ajouté !");
-}
-function renderProducts(){
-  let tb=document.querySelector("#productsTable tbody");tb.innerHTML="";
-  products.forEach(p=>tb.innerHTML+=`<tr><td>${p.code}</td><td>${p.name}</td><td>${p.price}</td></tr>`);
-}
+    function renderFacture() {
+      const container = document.getElementById("factureDetail");
+      let total = 0;
+      container.innerHTML = factureItems.map(p => {
+        total += p.prix;
+        return `<div class='invoice-item'><span>${p.nom}</span><span>${p.prix} DA</span></div>`;
+      }).join("");
+      container.innerHTML += `<hr><strong>Total: ${total} DA</strong>`;
+    }
 
-// ✅ Facturation
-function addToInvoice(){
-  let code=scanBarcode.value.trim();
-  let p=products.find(x=>x.code===code);
-  if(!p){alert("❌ Produit introuvable!");return;}
-  invoiceItems.push(p);renderInvoice();
-}
-function renderInvoice(){
-  let tb=document.querySelector("#invoiceTable tbody");tb.innerHTML="";let t=0;
-  invoiceItems.forEach(p=>{tb.innerHTML+=`<tr><td>${p.name}</td><td>${p.price}</td></tr>`;t+=p.price;});
-  total.innerText=t;
-}
-function saveInvoice(){
-  let c=clientName.value.trim(),a=clientAddress.value.trim(),s=paymentStatus.value;
-  if(!c||!a||invoiceItems.length===0){alert("⚠️ Complétez les infos!");return;}
-  invoices.push({client:c,address:a,items:invoiceItems,total:parseFloat(total.innerText),status:s,date:new Date().toLocaleString()});
-  localStorage.setItem("invoices",JSON.stringify(invoices));
-  invoiceItems=[];renderInvoice();alert("✅ Facture enregistrée !");
-}
-function renderSales(){
-  let tb=document.querySelector("#salesTable tbody");tb.innerHTML="";
-  invoices.forEach(f=>tb.innerHTML+=`<tr><td>${f.date}</td><td>${f.client}</td><td>${f.total}</td><td>${f.status}</td></tr>`);
-}
+    function imprimerFacture() {
+      const nom = document.getElementById("clientNom").value;
+      const adresse = document.getElementById("clientAdresse").value;
+      const paiement = document.getElementById("paiementSelect").value;
+      const total = factureItems.reduce((sum, p) => sum + p.prix, 0);
+      const date = new Date().toLocaleDateString();
 
-// ✅ Impression
-function printInvoice(){
-  let content = `<h3>Brilex</h3><p>${clientName.value}</p><p>${clientAddress.value}</p><hr>`;
-  invoiceItems.forEach(p=>content+=`${p.name} - ${p.price} DA<br>`);
-  content+=`<hr>Total: ${total.innerText} DA<br>Statut: ${paymentStatus.value}`;
-  let win=window.open();win.document.write(content);win.print();win.close();
-}
+      const vente = {
+        client: nom,
+        adresse,
+        date,
+        total,
+        paiement
+      };
 
-// ✅ Scanner
-function startScanner(inputId){
-  scanner.style.display="block";
-  Quagga.init({inputStream:{name:"Live",type:"LiveStream",target:scanner,constraints:{facingMode:"environment"}},decoder:{readers:["ean_reader","code_128_reader"]}},err=>{if(err){alert("Erreur Caméra");return;}Quagga.start();});
-  Quagga.onDetected(data=>{
-    document.getElementById(inputId).value=data.codeResult.code;
-    Quagga.stop();scanner.style.display="none";
-  });
-}
-</script>
-</body>
+      const ventes = JSON.parse(localStorage.getItem("ventes") || "[]");
+      ventes.push(vente);
+      localStorage.setItem("ventes", JSON.stringify(ventes));
+
+      alert("Facture imprimée / sauvegardée.");
+      factureItems = [];
+      renderFacture();
+    }
+
+    function renderSales() {
+      const ventes = JSON.parse(localStorage.getItem("ventes") || "[]");
+      const container = document.getElementById("salesSummary");
+      container.innerHTML = ventes.map(v => `
+        <div style='border-bottom:1px solid #ccc; padding:5px 0;'>
+          <div><strong>${v.client}</strong> - ${v.total} DA (${v.paiement})</div>
+          <small>${v.date} - ${v.adresse}</small>
+        </div>
+      `).join("");
+    }
+  </script></body>
 </html>
