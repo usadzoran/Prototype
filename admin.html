@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة تحكم المتجر - الإدارة</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Cairo:wght@700&display=swap" rel="stylesheet">
+
+<style>
+/* Base Reset and Arabic/RTL Support */
+body { 
+    font-family: 'Poppins', 'Cairo', sans-serif; 
+    background: #e9ebee; 
+    padding: 20px; 
+    color: #333;
+    direction: rtl; /* Support Arabic Right-to-Left */
+    text-align: right;
+}
+.mainbox { 
+    max-width: 900px; 
+    margin: 20px auto; 
+    background: #fff; 
+    padding: 30px; 
+    border-radius: 16px; 
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1); 
+}
+h1 {
+    text-align: center;
+    color: #007bff;
+    font-weight: 700;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+}
+h2 { 
+    text-align: right; 
+    margin-bottom: 20px; 
+    color: #007bff;
+    font-size: 24px;
+    padding-right: 10px;
+    border-right: 4px solid #007bff;
+}
+
+/* Form Styling */
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #555;
+    margin-top: 10px;
+}
+input, select, textarea { 
+    width: 100%; 
+    padding: 12px; 
+    margin-bottom: 15px; 
+    border-radius: 8px; 
+    border: 1px solid #ddd; 
+    box-sizing: border-box; /* Crucial for padding/width calculation */
+    transition: border-color 0.3s;
+}
+input:focus, select:focus, textarea:focus {
+    border-color: #007bff;
+    outline: none;
+}
+button { 
+    padding: 12px 20px; 
+    width: 100%; 
+    background: #007bff; 
+    color: white; 
+    border: none; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    font-weight: 700;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+}
+button:hover { 
+    background: #0056b3; 
+}
+.alert-error {
+    background: #ffe0e0;
+    color: #cc0000;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border: 1px solid #cc0000;
+}
+
+
+/* List Styling */
+.product-list, .ad-list, .visitor-list { margin-top: 25px; }
+.card { 
+    background: #f9f9f9; 
+    padding: 15px; 
+    border-radius: 10px; 
+    margin-bottom: 12px; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
+    display: flex; 
+    gap: 15px; 
+    align-items: center; 
+    border-right: 5px solid #007bff;
+}
+.card img { 
+    width: 80px; 
+    height: 80px; 
+    object-fit: cover; 
+    border-radius: 8px; 
+    border: 1px solid #eee;
+}
+.card-content {
+    flex-grow: 1;
+    text-align: right;
+}
+.card-content strong {
+    font-size: 16px;
+    color: #333;
+}
+.delete-btn { 
+    padding: 8px 15px; 
+    background: #dc3545; 
+    color: #fff; 
+    border: none; 
+    border-radius: 6px; 
+    cursor: pointer; 
+    margin-right: 20px; 
+    font-weight: 600;
+    width: auto;
+    transition: background-color 0.3s;
+}
+.delete-btn:hover { 
+    background: #c82333; 
+}
+
+/* Visitor specific styles */
+.visitor-card {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 14px;
+}
+</style>
+</head>
+<body>
+
+<h1>لوحة التحكم الرئيسية للمتجر</h1>
+
+<div class="mainbox">
+    <h2>إضافة منتج جديد</h2>
+    <label for="name">اسم المنتج</label>
+    <input id="name" placeholder="اسم المنتج بالبرتغالية">
+    
+    <div style="display:flex; gap:15px;">
+        <div style="flex:1;">
+            <label for="price">السعر العادي (R$)</label>
+            <input id="price" type="number" step="0.01" placeholder="مثال: 129.99">
+        </div>
+        <div style="flex:1;">
+            <label for="sale">سعر التخفيض (اختياري)</label>
+            <input id="sale" type="number" step="0.01" placeholder="مثال: 49.99">
+        </div>
+    </div>
+    
+    <label for="category">الفئة</label>
+    <select id="category">
+        <option value="Sports">رياضة (Sports)</option>
+        <option value="Winter">ملابس شتوية (Winter Clothing)</option>
+        <option value="Summer">ملابس صيفية (Summer Clothing)</option>
+        <option value="Underwear">ملابس داخلية (Underwear)</option>
+        <option value="Accessories">إكسسوارات (Accessories)</option>
+        <option value="Bags">حقائب (Bags)</option>
+        <option value="Shoes">أحذية (Shoes)</option>
+    </select>
+    
+    <label for="buy">رابط الشراء (Affiliate/Buy URL)</label>
+    <input id="buy" placeholder="رابط شراء المنتج (مطلوب)">
+    
+    <label for="image">صورة المنتج</label>
+    <input id="image" type="file">
+    
+    <button onclick="addProduct()">إضافة المنتج</button>
+    
+    <h3>قائمة المنتجات الحالية</h3>
+    <div class="product-list" id="products"></div>
+</div>
+
+<div class="mainbox">
+    <h2>إدارة الإعلانات</h2>
+    <label for="adCode">كود HTML للإعلان</label>
+    <textarea id="adCode" placeholder="الصق كود HTML للإعلان هنا" rows="5"></textarea>
+    
+    <label for="adPosition">موقع الإعلان</label>
+    <select id="adPosition">
+        <option value="top">أعلى الصفحة</option>
+        <option value="afterImage">بعد صورة المنتج</option>
+        <option value="beforeDescription">قبل الوصف</option>
+    </select>
+    <button onclick="addAd()">حفظ / تحديث الإعلان</button>
+    
+    <h3>الإعلانات النشطة</h3>
+    <div class="ad-list" id="ads"></div>
+</div>
+
+<div class="mainbox">
+    <h2>سجل الزوار</h2>
+    <div class="visitor-list" id="visitors"></div>
+</div>
+
+<script>
+// ===============================================
+// ** 2. تهيئة Supabase بالمعلومات التي قدمتها **
+// ===============================================
+const SUPABASE_URL = 'https://sedmoddpmyzidqoubbxl.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlZG1vZGRwbXl6aWRxb3ViYnhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzOTQ3MTIsImV4cCI6MjA4MDk3MDcxMn0.Kz3Omw9qblhyZN8AMJuDxzFiVcpfv2WKNtvLOhRldtk';
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// اسم الباكت (Bucket) الذي يجب إنشاؤه في Supabase Storage
+const BUCKET_NAME = "products-images";
+
+// ------------------ 1. المنتجات (Products) ------------------
+
+/**
+ * وظيفة إضافة منتج جديد
+ */
+async function addProduct() {
+    const name = document.getElementById("name").value;
+    const price = parseFloat(document.getElementById("price").value);
+    const sale = parseFloat(document.getElementById("sale").value) || null; // إذا كان فارغاً يكون NULL
+    const category = document.getElementById("category").value;
+    const buy = document.getElementById("buy").value;
+    const file = document.getElementById("image").files[0];
+
+    if (!name || isNaN(price) || !buy || !file) {
+        alert("يرجى ملء اسم المنتج والسعر ورابط الشراء واختيار صورة.");
+        return;
+    }
+
+    let image_url = null;
+
+    // 1. رفع الصورة إلى Supabase Storage
+    try {
+        const fileName = `${Date.now()}_${file.name}`;
+        const { error: imgError } = await supabase.storage.from(BUCKET_NAME).upload(fileName, file);
+
+        if (imgError) {
+            alert(`فشل رفع الصورة: ${imgError.message}`);
+            return;
+        }
+
+        // الحصول على رابط الصورة العام
+        const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(fileName);
+        image_url = data.publicUrl;
+
+    } catch (e) {
+        alert("حدث خطأ غير متوقع أثناء رفع الصورة.");
+        return;
+    }
+
+
+    // 2. إدخال بيانات المنتج إلى جدول 'products'
+    try {
+        const { error } = await supabase.from("products").insert([{
+            name: name,
+            price: price,
+            sale_price: sale,
+            category: category,
+            buy_link: buy,
+            image_url: image_url
+        }]);
+
+        if (error) {
+            console.error(error);
+            // قد يكون الخطأ بسبب RLS أو قيود NOT NULL
+            alert(`فشل حفظ المنتج. تحقق من سياسات RLS: ${error.message}`);
+        } else {
+            alert("تمت إضافة المنتج بنجاح!");
+            clearForm();
+            loadProducts();
+        }
+    } catch (e) {
+        alert("فشل إرسال البيانات إلى قاعدة البيانات.");
+    }
+}
+
+/**
+ * وظيفة مسح حقول النموذج
+ */
+function clearForm() {
+    document.getElementById("name").value = "";
+    document.getElementById("price").value = "";
+    document.getElementById("sale").value = "";
+    document.getElementById("category").value = "Sports";
+    document.getElementById("buy").value = "";
+    document.getElementById("image").value = "";
+}
+
+/**
+ * وظيفة حذف منتج
+ */
+async function deleteProduct(id) {
+    if (!confirm("هل أنت متأكد من حذف هذا المنتج؟")) return;
+
+    // ملاحظة: قد تحتاج إلى حذف الصورة من Storage يدوياً إذا أردت توفير المساحة.
+    const { error } = await supabase.from("products").delete().eq("id", id);
+    
+    if (error) {
+         alert(`فشل الحذف. تحقق من سياسات RLS: ${error.message}`);
+    } else {
+        loadProducts();
+    }
+}
+
+/**
+ * وظيفة تحميل وعرض المنتجات
+ */
+async function loadProducts() {
+    const productBox = document.getElementById("products");
+    productBox.innerHTML = '... جاري التحميل';
+
+    const { data: items, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
+
+    productBox.innerHTML = "";
+    if (error) {
+        productBox.innerHTML = `<div class="alert-error">خطأ في جلب المنتجات: ${error.message}. تأكد من تفعيل RLS لـ SELECT.</div>`;
+        return;
+    }
+
+    if (!items || items.length === 0) {
+        productBox.innerHTML = '<p style="text-align:center;">لا توجد منتجات حالياً.</p>';
+        return;
+    }
+
+    items.forEach(p => {
+        productBox.innerHTML += `
+        <div class="card">
+            <img src="${p.image_url}" alt="${p.name}">
+            <div class="card-content">
+                <strong>${p.name}</strong><br>
+                السعر: R$ ${p.price.toFixed(2)} | التخفيض: ${p.sale_price ? "R$ " + p.sale_price.toFixed(2) : "لا يوجد"}<br>
+                الفئة: ${p.category}
+                <a href="${p.buy_link}" target="_blank" style="margin-right:15px;">(رابط الشراء)</a>
+            </div>
+            <button class="delete-btn" onclick="deleteProduct('${p.id}')">حذف</button>
+        </div>
+        `;
+    });
+}
+loadProducts();
+
+
+// ------------------ 2. الإعلانات (Ads) ------------------
+
+/**
+ * وظيفة إضافة/تحديث إعلان (Upsert)
+ */
+async function addAd() {
+    const code = document.getElementById("adCode").value;
+    const position = document.getElementById("adPosition").value;
+    
+    if(!code || !position){
+         alert("كود الإعلان وموقعه مطلوبان.");
+        return;
+    }
+    
+    // نستخدم upsert بناءً على 'id' الذي هو 'position'
+    const { error } = await supabase.from("ads").upsert([{ id: position, code: code, position: position }]);
+    
+    if (error) {
+        alert(`فشل حفظ الإعلان. تحقق من سياسات RLS لـ UPSERT: ${error.message}`);
+    } else {
+        alert("تم حفظ الإعلان بنجاح!");
+        loadAds();
+    }
+}
+
+/**
+ * وظيفة تحميل وعرض الإعلانات
+ */
+async function loadAds() {
+    const { data, error } = await supabase.from("ads").select("*");
+    const adsDiv = document.getElementById("ads");
+    adsDiv.innerHTML = "";
+    
+    if (error) {
+        adsDiv.innerHTML = `<div class="alert-error">خطأ في جلب الإعلانات: ${error.message}</div>`;
+        return;
+    }
+
+    if (data) data.forEach(a => {
+        adsDiv.innerHTML += `<div class="card"><strong>${a.position}:</strong> <span style="font-size:12px;">${a.code.substring(0, 100)}...</span> <button class="delete-btn" onclick="deleteAd('${a.id}')">حذف</button></div>`;
+    });
+}
+loadAds();
+
+/**
+ * وظيفة حذف إعلان
+ */
+async function deleteAd(id) {
+    if (!confirm("هل أنت متأكد من حذف هذا الإعلان؟")) return;
+    const { error } = await supabase.from("ads").delete().eq("id", id);
+    if (!error) loadAds();
+}
+
+
+// ------------------ 3. الزوار (Visitors) ------------------
+
+/**
+ * وظيفة تحميل وعرض سجل الزوار
+ */
+async function loadVisitors() {
+    const { data, error } = await supabase.from("visitors").select("*").order("visited_at", { ascending: false }).limit(20);
+    const visDiv = document.getElementById("visitors");
+    visDiv.innerHTML = "";
+    
+    if (error) {
+        visDiv.innerHTML = `<div class="alert-error">خطأ في جلب سجل الزوار: ${error.message}</div>`;
+        return;
+    }
+
+    if (data) data.forEach(v => {
+        // نستخدم updated_at للتاريخ والوقت إذا لم يكن visited_at متاحاً
+        const date = v.visited_at ? new Date(v.visited_at).toLocaleString('ar-DZ') : 'غير متوفر';
+        visDiv.innerHTML += `<div class="card visitor-card">
+            <strong>${v.ip_address || 'غير محدد'}</strong> - ${v.country || 'غير معروف'} - ${date}
+        </div>`;
+    });
+}
+loadVisitors();
+
+</script>
+</body>
+</html>
