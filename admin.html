@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin Panel Full</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body { font-family:sans-serif; background:#f4f4f4; padding:20px; }
+.mainbox { max-width: 800px; margin:auto; background:#fff; padding:20px; border-radius:12px; box-shadow:0 3px 10px rgba(0,0,0,0.1); margin-bottom:30px; }
+h2 { text-align:center; margin-bottom:15px; }
+input, select, textarea { width:100%; padding:12px; margin-bottom:12px; border-radius:6px; border:1px solid #ccc; }
+button { padding:12px 20px; width:100%; background:#ff4d4d; color:white; border:none; border-radius:6px; cursor:pointer; }
+button:hover { background:#e04040; }
+.product-list, .ad-list, .visitor-list { margin-top:25px; }
+.card { background:#fff; padding:15px; border-radius:8px; margin-bottom:12px; box-shadow:0 2px 6px rgba(0,0,0,0.08); display:flex; gap:15px; align-items:center; }
+.card img { width:80px; height:80px; object-fit:cover; border-radius:6px; }
+.delete-btn { padding:6px 12px; background:#777; color:#fff; border:none; border-radius:4px; cursor:pointer; margin-left:auto; }
+.delete-btn:hover { background:#555; }
+</style>
+</head>
+<body>
+
+<!-- Products Section -->
+<div class="mainbox">
+<h2>Add Product</h2>
+<label>Product Name</label>
+<input id="name" placeholder="Product name">
+<label>Price</label>
+<input id="price" type="number" placeholder="Regular price">
+<label>Sale Price (optional)</label>
+<input id="sale" type="number" placeholder="Discount price">
+<label>Category</label>
+<select id="category">
+    <option value="Sports">Sports</option>
+    <option value="Winter">Winter Clothing</option>
+    <option value="Summer">Summer Clothing</option>
+    <option value="Underwear">Underwear</option>
+    <option value="Accessories">Accessories</option>
+    <option value="Bags">Bags</option>
+    <option value="Shoes">Shoes</option>
+</select>
+<label>Buy Link</label>
+<input id="buy" placeholder="Affiliate/Buy URL">
+<label>Product Image</label>
+<input id="image" type="file">
+<button onclick="addProduct()">Add Product</button>
+<div class="product-list" id="products"></div>
+</div>
+
+<!-- Ads Section -->
+<div class="mainbox">
+<h2>Manage Ads</h2>
+<label>Ad HTML Code</label>
+<textarea id="adCode" placeholder="Paste your ad HTML here"></textarea>
+<label>Position</label>
+<select id="adPosition">
+    <option value="top">Top of Page</option>
+    <option value="afterImage">After Product Image</option>
+    <option value="beforeDescription">Before Description</option>
+</select>
+<button onclick="addAd()">Add/Update Ad</button>
+<div class="ad-list" id="ads"></div>
+</div>
+
+<!-- Visitors Section -->
+<div class="mainbox">
+<h2>Visitors</h2>
+<div class="visitor-list" id="visitors"></div>
+</div>
+
+<script>
+// Initialize Supabase
+const supabase = supabase.createClient("YOUR_SUPABASE_URL","YOUR_SUPABASE_ANON_KEY");
+
+// ------------------ Products ------------------
+async function addProduct() {
+    const name = document.getElementById("name").value;
+    const price = document.getElementById("price").value;
+    const sale = document.getElementById("sale").value;
+    const category = document.getElementById("category").value;
+    const buy = document.getElementById("buy").value;
+    const file = document.getElementById("image").files[0];
+
+    if(!name || !price || !file){ alert("Fill required fields"); return; }
+
+    const fileName = `${Date.now()}-${file.name}`;
+    const { error: imgError } = await supabase.storage.from("products-images").upload(fileName,file);
+    if(imgError){ alert("Image upload failed"); return; }
+
+    const image_url = supabase.storage.from("products-images").getPublicUrl(fileName).data.publicUrl;
+
+    const { error } = await supabase.from("products").insert([{name,price,sale_price:sale,category,buy_link:buy,image_url}]);
+    if(error){ alert("Error saving product"); }
+    else { alert("Product added!"); clearForm(); loadProducts(); }
+}
+
+function clearForm(){
+    document.getElementById("name").value="";
+    document.getElementById("price").value="";
+    document.getElementById("sale").value="";
+    document.getElementById("category").value="Sports";
+    document.getElementById("buy").value="";
+    document.getElementById("image").value="";
+}
+
+async function deleteProduct(id){
+    await supabase.from("products").delete().eq("id",id);
+    loadProducts();
+}
+
+async function loadProducts(){
+    const productBox = document.getElementById("products"); productBox.innerHTML="";
+    const { data: items } = await supabase.from("products").select("*").order("created_at",{ascending:false});
+    items.forEach(p=>{
+        productBox.innerHTML+=`
+        <div class="card">
+            <img src="${p.image_url}">
+            <div>
+                <strong>${p.name}</strong><br>
+                Price: $${p.price}<br>
+                Sale: ${p.sale_price? "$"+p.sale_price:"No discount"}<br>
+                Category: ${p.category}<br>
+                <a href="${p.buy_link}" target="_blank">Buy Link</a>
+            </div>
+            <button class="delete-btn" onclick="deleteProduct('${p.id}')">Delete</button>
+        </div>
+        `;
+    });
+}
+loadProducts();
+
+// ------------------ Ads ------------------
+async function addAd(){
+    const code = document.getElementById("adCode").value;
+    const position = document.getElementById("adPosition").value;
+
+    const { error } = await supabase.from("ads").upsert([{id:position,code,position}]);
+    if(error){ alert("Error saving ad"); }
+    else { alert("Ad saved!"); loadAds(); }
+}
+
+async function loadAds(){
+    const { data } = await supabase.from("ads").select("*");
+    const adsDiv = document.getElementById("ads"); adsDiv.innerHTML="";
+    if(data) data.forEach(a=>{ adsDiv.innerHTML+=`<div class="card"><strong>${a.position}</strong>: ${a.code}</div>` });
+}
+loadAds();
+
+// ------------------ Visitors ------------------
+async function loadVisitors(){
+    const { data } = await supabase.from("visitors").select("*").order("visited_at",{ascending:false});
+    const visDiv = document.getElementById("visitors"); visDiv.innerHTML="";
+    if(data) data.forEach(v=>{
+        visDiv.innerHTML+=`<div class="card">${v.ip_address} - ${v.country} - ${v.user_agent} - ${v.visited_at}</div>`;
+    });
+}
+loadVisitors();
+</script>
+</body>
+</html>
