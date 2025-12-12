@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>موقع البطولة</title>
+<style>
+body {margin:0;font-family:Tahoma,sans-serif;background:#f5f5f5;color:#111;}
+header {background:#111;color:#fff;padding:20px;text-align:center;font-size:28px;font-weight:bold;position:sticky;top:0;z-index:1000;display:flex;justify-content:space-between;align-items:center;}
+header .logo {font-size:28px;}
+header .buttons button {background:#ffcc00;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;margin-left:10px;font-weight:bold;}
+.hero {background:#008cff;color:white;text-align:center;padding:80px 20px;display:flex;flex-direction:column;align-items:center;transition:0.5s;}
+.hero img {max-width:400px;margin-bottom:20px;border-radius:10px;transition:0.5s;}
+.hero button {background:#ffcc00;color:#111;font-size:18px;padding:12px 30px;border:none;border-radius:8px;cursor:pointer;margin-top:20px;font-weight:bold;transition:0.3s;}
+.hero button:hover {background:#ffd633;}
+section {padding:50px 20px;text-align:center;}
+section h2 {margin-bottom:30px;}
+.card {background:white;padding:20px;margin:15px auto;border-radius:10px;box-shadow:0 0 15px #0001;max-width:600px;text-align:right;transition:0.3s;}
+.card b{display:block;margin-bottom:5px;}
+table {width:90%;margin:0 auto;border-collapse:collapse;}
+th, td {border:1px solid #ccc;padding:10px;text-align:center;}
+th {background:#008cff;color:white;}
+.card:hover {transform:scale(1.02);}
+.slider {display:flex;overflow-x:auto;scroll-behavior:smooth;}
+.slider::-webkit-scrollbar{display:none;}
+.slider .card{min-width:250px;margin-right:15px;flex-shrink:0;}
+footer {background:#111;color:white;padding:20px;text-align:center;margin-top:50px;}
+/* ستايل نتائج القرعة */
+.draw-item {background:#e6f3ff;padding:10px;margin-bottom:8px;border-radius:5px; text-align: center;}
+.draw-item strong {color:#008cff; font-weight: bold;}
+@media(max-width:600px){.hero img{max-width:90%;} .card{max-width:90%;} table{width:100%;}}
+</style>
+</head>
+<body>
+
+<header>
+    <div class="logo">موقع البطولة</div>
+    <div class="buttons">
+        <button onclick="alert('تسجيل الدخول')">تسجيل</button>
+        <button onclick="alert('إنشاء حساب')">انضم</button>
+    </div>
+</header>
+
+<section class="hero">
+    <img src="https://via.placeholder.com/400x250.png?text=بطولة+كرة+القدم+بين+الاحياء" alt="البطولة">
+    <h1>بطولة كرة القدم بين الاحياء!</h1>
+    <p>أفضل تجربة للمشاركة في بطولاتنا المشوقة</p>
+    <button onclick="alert('سيتم تحويلك لصفحة التسجيل')">سجّل فريقك الآن</button>
+</section>
+
+<section id="drawSection">
+    <h2>نتائج القرعة الأخيرة</h2>
+    <div class="card" id="drawResultFront">
+        <p>تحميل نتائج القرعة...</p>
+    </div>
+</section>
+
+<section id="tournamentsSection">
+    <h2>البطولات القادمة</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>البطولة</th>
+                <th>تاريخ ووقت البداية</th>
+                <th>انضم</th>
+            </tr>
+        </thead>
+        <tbody id="tournamentsList">
+            <tr><td colspan="3">تحميل البيانات...</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<section id="adsSection">
+    <h2>آخر الإعلانات</h2>
+    <div class="slider" id="adsListFront">
+        <div class="card">تحميل الإعلانات...</div>
+    </div>
+</section>
+
+<section id="blogSection">
+    <h2>آخر المقالات</h2>
+    <div class="slider" id="blogsListFront">
+        <div class="card">تحميل المقالات...</div>
+    </div>
+</section>
+
+<footer>
+    حقوق النشر &copy; 2025 موقع البطولة
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script>
+// إعداد Supabase
+const supabaseUrl = "https://gnvbeackjfvguyivgpuo.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdudmJlYWNramZ2Z3V5aXZncHVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1NTQyMzAsImV4cCI6MjA4MTEzMDIzMH0.Df7uplEbcJa-dQnSr8n-tpHTOfzi5j0rjTCGfgIvcMw";
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+
+// دالة تحميل وعرض القرعة
+async function loadDrawsFront() {
+    const container = document.getElementById("drawResultFront");
+    
+    const { data: latestDraw, error } = await supabase
+        .from("matches")
+        .select()
+        .order("draw_time", { ascending: false })
+        .limit(100); 
+
+    if (error) {
+        container.innerHTML = `<p style="color:red;">خطأ في تحميل القرعة: ${error.message}</p>`;
+        return;
+    }
+
+    if (!latestDraw || latestDraw.length === 0) {
+        container.innerHTML = "<p>لم يتم إجراء أو حفظ أي قرعة بعد.</p>";
+        return;
+    }
+
+    const latestDrawTime = latestDraw[0].draw_time;
+    const currentDrawMatches = latestDraw.filter(match => match.draw_time === latestDrawTime);
+
+    container.innerHTML = `<h3>قرعة البطولة الأخيرة - ${currentDrawMatches[0].teams_count} فرق</h3>`;
+    currentDrawMatches.forEach(match => {
+        container.innerHTML += `<div class="draw-item"><strong>${match.team1}</strong> vs <strong>${match.team2}</strong></div>`;
+    });
+}
+
+
+// دالة تحميل البطولات
+async function loadTournamentsFront() {
+    const { data } = await supabase.from("tournaments").select().order("start_time",{ascending:true});
+    const tbody = document.getElementById("tournamentsList");
+    tbody.innerHTML="";
+    if(!data || data.length===0){
+        tbody.innerHTML="<tr><td colspan='3'>لا توجد بطولات حاليا</td></tr>";
+        return;
+    }
+    data.forEach((t,i)=>{
+        const row = document.createElement("tr");
+        row.innerHTML=`<td>البطولة ${i+1}</td><td>${new Date(t.start_time).toLocaleString()}</td>
+        <td><button onclick="alert('تم الانضمام للبطولة ${i+1}')">انضم</button></td>`;
+        tbody.appendChild(row);
+    });
+}
+
+// دالة تحميل الإعلانات
+async function loadAdsFront(){
+    const { data } = await supabase.from("ads").select().order("created_at",{ascending:false}).limit(5);
+    const container = document.getElementById("adsListFront");
+    container.innerHTML="";
+    if(!data || data.length===0){
+        container.innerHTML="<div class='card'>لا توجد إعلانات حاليا</div>";
+        return;
+    }
+    data.forEach(a=>{
+        const div = document.createElement("div");
+        div.className="card";
+        div.innerHTML=`<b>${a.title}</b><p>${a.content}</p>`;
+        container.appendChild(div);
+    });
+}
+
+// دالة تحميل المقالات
+async function loadBlogsFront(){
+    const { data } = await supabase.from("blogs").select().order("created_at",{ascending:false}).limit(5);
+    const container = document.getElementById("blogsListFront");
+    container.innerHTML="";
+    if(!data || data.length===0){
+        container.innerHTML="<div class='card'>لا توجد مقالات حاليا</div>";
+        return;
+    }
+    data.forEach(b=>{
+        const div = document.createElement("div");
+        div.className="card";
+        // عرض جزء من محتوى المقال
+        div.innerHTML=`<b>${b.title}</b><p>${b.content.substring(0,100)}...</p>`;
+        container.appendChild(div);
+    });
+}
+
+// تشغيل الدوال عند تحميل الصفحة
+window.addEventListener("DOMContentLoaded",()=>{
+    loadDrawsFront(); 
+    loadTournamentsFront();
+    loadAdsFront();
+    loadBlogsFront();
+});
+</script>
+
+</body>
+</html>
