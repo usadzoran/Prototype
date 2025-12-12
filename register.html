@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل فريق جديد</title>
+    <style>
+        body {
+            font-family: Tahoma, sans-serif;
+            background: #f5f5f5;
+            color: #111;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            max-width: 700px;
+            width: 100%;
+        }
+        h2 {
+            text-align: center;
+            color: #008cff;
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 5px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        button {
+            background: #008cff;
+            border: none;
+            padding: 12px 25px;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 18px;
+            width: 100%;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #006acc;
+        }
+        .section-divider {
+            border-top: 2px dashed #ddd;
+            margin: 30px 0;
+            padding-top: 10px;
+        }
+        .player-entry {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .player-entry input {
+            flex-grow: 1;
+        }
+        .player-entry input[type="number"] {
+            max-width: 80px;
+        }
+        .remove-player {
+            background: #ff4d4d;
+            width: 40px;
+            padding: 10px;
+            margin: 0;
+            font-size: 16px;
+        }
+        .add-player {
+            background: #ffcc00;
+            color: #111;
+            width: auto;
+            margin-top: 10px;
+            padding: 10px 15px;
+        }
+        .success-message {
+            color: green;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .error-message {
+            color: red;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>تسجيل فريق جديد في البطولة</h2>
+
+    <form id="registrationForm">
+        
+        <h3>1. بيانات تسجيل الدخول</h3>
+        <label for="coachEmail">البريد الإلكتروني (لتسجيل الدخول)</label>
+        <input type="email" id="coachEmail" required>
+
+        <label for="coachPassword">كلمة المرور</label>
+        <input type="password" id="coachPassword" required>
+
+        <div class="section-divider"></div>
+
+        <h3>2. معلومات الفريق والمدرب</h3>
+        <label for="teamName">اسم الفريق</label>
+        <input type="text" id="teamName" required>
+
+        <label for="coachName">اسم المدرب</label>
+        <input type="text" id="coachName" required>
+
+        <label for="state">الولاية</label>
+        <input type="text" id="state" required placeholder="مثال: وهران">
+
+        <label for="district">الحي</label>
+        <input type="text" id="district" required placeholder="اسم الحي/المنطقة">
+
+        <label for="phoneNumber">رقم الهاتف</label>
+        <input type="tel" id="phoneNumber" required placeholder="05xxxxxxxx">
+        
+        <label for="teamLogo">رابط شعار الفريق (اختياري)</label>
+        <input type="url" id="teamLogo" placeholder="http://example.com/logo.png">
+
+        <div class="section-divider"></div>
+
+        <h3>3. قائمة اللاعبين (يجب إضافة 5 لاعبين على الأقل)</h3>
+        <div id="playersContainer">
+            </div>
+        <button type="button" class="add-player" onclick="addPlayerField()">+ إضافة لاعب</button>
+        
+        <div class="section-divider"></div>
+        
+        <button type="submit" id="submitBtn">تسجيل الفريق</button>
+
+    </form>
+    
+    <div id="message" class="error-message"></div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script>
+// إعداد Supabase (نفس المفاتيح المستخدمة سابقًا)
+const supabaseUrl = "https://gnvbeackjfvguyivgpuo.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdudmJlYWNramZ2Z3V5aXZncHVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1NTQyMzAsImV4cCI6MjA4MTEzMDIzMH0.Df7uplEbcJa-dQnSr8n-tpHTOfzi5j0rjTCGfgIvcMw";
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+const playersContainer = document.getElementById('playersContainer');
+const registrationForm = document.getElementById('registrationForm');
+const messageDiv = document.getElementById('message');
+const submitBtn = document.getElementById('submitBtn');
+
+// ===========================================
+// دالة إضافة حقل لاعب جديد
+// ===========================================
+function addPlayerField(playerName = '', playerAge = '') {
+    const playerEntry = document.createElement('div');
+    playerEntry.className = 'player-entry';
+    
+    playerEntry.innerHTML = `
+        <input type="text" class="playerName" placeholder="اسم اللاعب" value="${playerName}" required>
+        <input type="number" class="playerAge" placeholder="العمر" min="10" max="99" value="${playerAge}" required>
+        <button type="button" class="remove-player" onclick="this.parentNode.remove()">حذف</button>
+    `;
+    playersContainer.appendChild(playerEntry);
+}
+
+// إضافة 5 حقول افتراضية عند التحميل
+for (let i = 0; i < 5; i++) {
+    addPlayerField();
+}
+
+// ===========================================
+// الدالة الرئيسية للتسجيل وحفظ البيانات
+// ===========================================
+registrationForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    messageDiv.textContent = '';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'جاري التسجيل...';
+
+    const email = document.getElementById('coachEmail').value;
+    const password = document.getElementById('coachPassword').value;
+    const teamName = document.getElementById('teamName').value.trim();
+    const coachName = document.getElementById('coachName').value.trim();
+    const state = document.getElementById('state').value.trim();
+    const district = document.getElementById('district').value.trim();
+    const phoneNumber = document.getElementById('phoneNumber').value.trim();
+    const teamLogo = document.getElementById('teamLogo').value.trim();
+
+    const playerNames = Array.from(document.querySelectorAll('.playerName')).map(input => input.value.trim());
+    const playerAges = Array.from(document.querySelectorAll('.playerAge')).map(input => parseInt(input.value));
+
+    // التحقق من عدد اللاعبين
+    if (playerNames.length < 5) {
+        messageDiv.textContent = 'يجب إضافة 5 لاعبين على الأقل.';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'تسجيل الفريق';
+        return;
+    }
+
+    // 1. إنشاء حساب المدرب (Sign Up)
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+    });
+
+    if (authError) {
+        // رسالة خطأ شائعة: إذا كان المستخدم موجودًا بالفعل
+        if (authError.message.includes('already registered')) {
+            messageDiv.textContent = 'البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول أو استخدام بريد آخر.';
+        } else {
+            messageDiv.textContent = `خطأ في تسجيل الدخول: ${authError.message}`;
+        }
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'تسجيل الفريق';
+        return;
+    }
+    
+    const userId = authData.user.id;
+    
+    // 2. إدخال معلومات الفريق (جدول coaches)
+    const { data: coachData, error: coachError } = await supabase
+        .from('coaches')
+        .insert([{
+            user_id: userId,
+            team_name: teamName,
+            coach_name: coachName,
+            state: state,
+            district: district,
+            phone_number: phoneNumber,
+            team_logo_url: teamLogo || null
+        }])
+        .select()
+        .single();
+    
+    if (coachError) {
+        // إذا فشل إدخال الفريق، نحذف الحساب الذي أنشأناه للتو لتجنب الحسابات المعلقة
+        await supabase.auth.admin.deleteUser(userId); 
+        
+        messageDiv.textContent = `خطأ في تسجيل الفريق (ربما اسم الفريق مكرر): ${coachError.message}`;
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'تسجيل الفريق';
+        return;
+    }
+    
+    const coachId = coachData.id;
+
+    // 3. إدخال معلومات اللاعبين (جدول players)
+    const playersToInsert = playerNames.map((name, index) => ({
+        coach_id: coachId,
+        player_name: name,
+        age: playerAges[index]
+    })).filter(player => player.player_name && player.age); // التأكد من وجود البيانات
+
+    const { error: playersError } = await supabase
+        .from('players')
+        .insert(playersToInsert);
+
+    if (playersError) {
+        // ملاحظة: في حالة فشل تسجيل اللاعبين، يجب أن يكون هناك طريقة للمدرب لإضافة اللاعبين لاحقاً
+        messageDiv.textContent = `خطأ في تسجيل اللاعبين: ${playersError.message}. تم تسجيل الفريق لكن يرجى إضافة اللاعبين لاحقاً.`;
+    }
+
+    // 4. رسالة النجاح
+    registrationForm.reset();
+    playersContainer.innerHTML = '';
+    for (let i = 0; i < 5; i++) {
+        addPlayerField(); // إعادة تعبئة الحقول الافتراضية
+    }
+    messageDiv.className = 'success-message';
+    messageDiv.innerHTML = `
+        <p>✔ تم تسجيل فريقك بنجاح باسم <strong>${teamName}</strong>.</p>
+        <p>يرجى التحقق من بريدك الإلكتروني <strong>${email}</strong> لتأكيد الحساب.</p>
+        <p><a href="login.html">انتقل لصفحة تسجيل الدخول</a></p>
+    `;
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'تسجيل الفريق';
+});
+</script>
+
+</body>
+</html>
