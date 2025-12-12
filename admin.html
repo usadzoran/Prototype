@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة تحكم الأدمن</title>
+<style>
+/* نفس ستايل الصفحة السابق */
+body{margin:0;font-family:Tahoma,sans-serif;background:#f5f5f5}
+.topbar{background:#111;color:#fff;padding:15px;text-align:center;font-size:22px;font-weight:bold;position:fixed;top:0;width:100%;z-index:1000}
+.menu-btn{position:absolute;right:15px;top:15px;background:#ffcc00;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;font-weight:bold}
+.sidebar{position:fixed;top:0;right:-260px;width:260px;height:100vh;background:#222;color:white;padding-top:70px;transition:0.3s;overflow-y:auto}
+.sidebar.active{right:0}
+.sidebar a{display:block;padding:15px;border-bottom:1px solid #333;color:white;text-decoration:none;font-size:18px}
+.sidebar a:hover{background:#444}
+.content{padding:100px 20px}
+.card{background:white;padding:20px;border-radius:10px;margin-bottom:25px;box-shadow:0 0 10px #0001;display:none}
+input,textarea{width:100%;padding:10px;margin-top:8px;border-radius:6px;border:1px solid #ccc;box-sizing:border-box}
+button{background:#008cff;border:none;padding:12px 25px;color:white;border-radius:6px;cursor:pointer;margin-top:10px;font-size:16px}
+button:hover{background:#006acc}
+.list-item{padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:6px;background:#f9f9f9;display:flex;justify-content:space-between;align-items:center}
+.list-item button{background:#ff4d4d;padding:5px 10px;font-size:14px}
+/* إضافة ستايل لنتيجة القرعة */
+#drawResult p {
+    font-size: 18px;
+    padding: 5px 0;
+    margin: 5px 0;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+    لوحة تحكم الأدمن
+    <button class="menu-btn" onclick="toggleMenu()">☰ Menu</button>
+</div>
+
+<div class="sidebar" id="sidebar">
+    <a href="#" onclick="showSection('tournament')">إعداد وقت البطولة</a>
+    <a href="#" onclick="showSection('draw')">إدارة القرعة</a>
+    <a href="#" onclick="showSection('ads')">قسم الإعلانات</a>
+    <a href="#" onclick="showSection('blog')">قسم المدونة</a>
+</div>
+
+<div class="content">
+
+<div class="card" id="tournament">
+    <h2>إعداد وقت البطولة</h2>
+    <input type="datetime-local" id="tournamentTime">
+    <button onclick="saveTournamentTime()">حفظ</button>
+    <h3>أوقات البطولات الحالية:</h3>
+    <div id="tournamentList"></div>
+</div>
+
+<div class="card" id="draw">
+    <h2>إنشاء وحفظ القرعة</h2>
+    <input type="number" id="teamsCount" min="2" placeholder="عدد الفرق (يجب أن يكون عدد زوجي أو فردي)">
+    <button onclick="saveDraw()">إنشاء وحفظ القرعة</button>
+    
+    <div id="drawResult" style="margin-top:20px;">
+        </div>
+</div>
+
+<div class="card" id="ads">
+    <h2>إضافة إعلان</h2>
+    <input type="text" id="adTitle" placeholder="عنوان الإعلان">
+    <textarea id="adText" rows="4" placeholder="نص الإعلان"></textarea>
+    <button onclick="saveAd()">نشر إعلان</button>
+    <h3>الإعلانات الحالية:</h3>
+    <div id="adsList"></div>
+</div>
+
+<div class="card" id="blog">
+    <h2>إضافة موضوع</h2>
+    <input type="text" id="blogTitle" placeholder="عنوان الموضوع">
+    <textarea id="blogContent" rows="8" placeholder="محتوى الموضوع"></textarea>
+    <button onclick="saveBlog()">نشر موضوع</button>
+    <h3>المقالات الحالية:</h3>
+    <div id="blogsList"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script>
+const supabaseUrl = "https://gnvbeackjfvguyivgpuo.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdudmJlYWNramZ2Z3V5aXZncHVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1NTQyMzAsImV4cCI6MjA4MTEzMDIzMH0.Df7uplEbcJa-dQnSr8n-tpHTOfzi5j0rjTCGfgIvcMw";
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+function toggleMenu(){ document.getElementById("sidebar").classList.toggle("active"); }
+function showSection(id){
+    document.querySelectorAll(".card").forEach(c=>c.style.display="none");
+    const section=document.getElementById(id);
+    if(section) section.style.display="block";
+    document.getElementById("sidebar").classList.remove("active");
+}
+
+// --------------------------------------------------
+// 1. تحميل وعرض البيانات
+// --------------------------------------------------
+
+async function loadTournaments(){ const {data} = await supabase.from("tournaments").select().order("created_at",{ascending:false}); const c=document.getElementById("tournamentList"); c.innerHTML=""; if(data) data.forEach(t=>{ const d=document.createElement("div"); d.className="list-item"; d.innerHTML=`${new Date(t.start_time).toLocaleString()} <button onclick="deleteTournament('${t.id}')">حذف</button>`; c.appendChild(d); }); }
+async function loadAds(){ const {data} = await supabase.from("ads").select().order("created_at",{ascending:false}); const c=document.getElementById("adsList"); c.innerHTML=""; if(data) data.forEach(a=>{ const d=document.createElement("div"); d.className="list-item"; d.innerHTML=`<div><b>${a.title}</b><p>${a.content}</p></div><button onclick="deleteAd('${a.id}')">حذف</button>`; c.appendChild(d); }); }
+async function loadBlogs(){ const {data} = await supabase.from("blogs").select().order("created_at",{ascending:false}); const c=document.getElementById("blogsList"); c.innerHTML=""; if(data) data.forEach(b=>{ const d=document.createElement("div"); d.className="list-item"; d.innerHTML=`<div><b>${b.title}</b><p>${b.content}</p></div><button onclick="deleteBlog('${b.id}')">حذف</button>`; c.appendChild(d); }); }
+
+// دالة جديدة: تحميل آخر قرعة محفوظة
+async function loadDraws() {
+    const { data: allMatches, error } = await supabase
+        .from("matches")
+        .select()
+        // نجلب أحدث السجلات أولاً
+        .order("created_at", { ascending: false }); 
+
+    const resultDiv = document.getElementById("drawResult");
+    resultDiv.innerHTML = '<h3>نتائج آخر قرعة محفوظة:</h3>';
+
+    if (error) {
+        resultDiv.innerHTML += `<p style="color:red;">خطأ في تحميل القرعة: ${error.message}</p>`;
+        return;
+    }
+
+    if (!allMatches || allMatches.length === 0) {
+        resultDiv.innerHTML += "<p>لم يتم حفظ أي قرعة بعد.</p>";
+        return;
+    }
+
+    // لتحديد مجموعة المباريات التي تنتمي لآخر قرعة تم إنشاؤها
+    let latestDrawTime = '';
+    const groupedDraws = {};
+
+    allMatches.forEach(match => {
+        const timeKey = match.draw_time;
+        if (!groupedDraws[timeKey]) {
+            groupedDraws[timeKey] = [];
+            if (!latestDrawTime || timeKey < latestDrawTime) { // التاريخ الأحدث يكون أصغر عند المقارنة الزمنية المباشرة للـ ISO string
+                latestDrawTime = timeKey;
+            }
+        }
+        groupedDraws[timeKey].push(match);
+    });
+
+    const latestDrawMatches = groupedDraws[latestDrawTime];
+
+    if (latestDrawMatches) {
+        // نستخدم حقل teams_count من أول سجل في المجموعة
+        resultDiv.innerHTML += `<h4>تاريخ القرعة: ${new Date(latestDrawTime).toLocaleString()} (${latestDrawMatches[0].teams_count} فرق)</h4>`;
+        latestDrawMatches.forEach(match => {
+            resultDiv.innerHTML += `<p>${match.team1} <span style="font-weight:bold;">VS</span> ${match.team2}</p>`;
+        });
+        // زر لحذف القرعة بناءً على تاريخ إنشائها
+        resultDiv.innerHTML += `<br><button onclick="deleteDraw('${latestDrawTime}')" style="background:#ff4d4d;">حذف آخر قرعة</button>`;
+    } else {
+         resultDiv.innerHTML += "<p>لم يتم حفظ أي قرعة بعد.</p>";
+    }
+}
+
+
+// --------------------------------------------------
+// 2. حفظ البيانات (بما في ذلك القرعة الجديدة)
+// --------------------------------------------------
+
+async function saveTournamentTime(){ const time=document.getElementById("tournamentTime").value; if(!time)return alert("اختر وقت البطولة!"); const {error}=await supabase.from("tournaments").insert([{start_time:time}]); if(error) alert(error.message); else{ alert("✔ تم الحفظ!"); document.getElementById("tournamentTime").value=""; loadTournaments(); } }
+async function saveAd(){ const t=document.getElementById("adTitle").value.trim(); const c=document.getElementById("adText").value.trim(); if(!t||!c)return alert("اكمل جميع الحقول!"); const {error}=await supabase.from("ads").insert([{title:t,content:c}]); if(error) alert(error.message); else{ alert("✔ تم النشر!"); document.getElementById("adTitle").value=""; document.getElementById("adText").value=""; loadAds(); } }
+async function saveBlog(){ const t=document.getElementById("blogTitle").value.trim(); const c=document.getElementById("blogContent").value.trim(); if(!t||!c)return alert("اكمل جميع الحقول!"); const {error}=await supabase.from("blogs").insert([{title:t,content:c}]); if(error) alert(error.message); else{ alert("✔ تم النشر!"); document.getElementById("blogTitle").value=""; document.getElementById("blogContent").value=""; loadBlogs(); } }
+
+// دالة جديدة: إنشاء وحفظ القرعة
+async function saveDraw() {
+    const n = parseInt(document.getElementById("teamsCount").value);
+    if (!n || n < 2) return alert("أدخل عدد صالح للفرق (يجب أن يكون 2 أو أكثر)!");
+
+    const matchesToInsert = [];
+    // نستخدم تاريخ ووقت الحفظ كمجموعة تعريف للقرعة
+    const drawTime = new Date().toISOString(); 
+
+    // منطق إنشاء المباريات
+    for (let i = 1; i <= n; i += 2) {
+        let team1 = `الفريق ${i}`;
+        let team2 = (i + 1 <= n) ? `الفريق ${i + 1}` : 'دور مباشر (Bye)';
+
+        matchesToInsert.push({
+            draw_time: drawTime, // مفتاح ربط لجميع مباريات هذه القرعة
+            team1: team1,
+            team2: team2,
+            teams_count: n
+        });
+    }
+
+    // حفظ جميع المباريات كدفعة واحدة
+    const { error } = await supabase.from("matches").insert(matchesToInsert);
+
+    if (error) {
+        alert("خطأ في حفظ القرعة: " + error.message);
+    } else {
+        alert("✔ تم حفظ نتائج القرعة بنجاح!");
+        document.getElementById("teamsCount").value = "";
+        loadDraws(); // تحديث العرض بالنتائج الجديدة
+    }
+}
+
+
+// --------------------------------------------------
+// 3. حذف البيانات
+// --------------------------------------------------
+
+async function deleteTournament(id){ if(!confirm("هل تريد حذف هذا الوقت؟")) return; const {error}=await supabase.from("tournaments").delete().eq("id",id); if(error) alert(error.message); else loadTournaments(); }
+async function deleteAd(id){ if(!confirm("هل تريد حذف هذا الإعلان؟")) return; const {error}=await supabase.from("ads").delete().eq("id",id); if(error) alert(error.message); else loadAds(); }
+async function deleteBlog(id){ if(!confirm("هل تريد حذف هذا المقال؟")) return; const {error}=await supabase.from("blogs").delete().eq("id",id); if(error) alert(error.message); else loadBlogs(); }
+
+// دالة جديدة: حذف القرعة بالكامل بناءً على وقت إنشائها
+async function deleteDraw(drawTime) {
+    if (!confirm(`هل أنت متأكد من حذف نتائج القرعة بتاريخ ${new Date(drawTime).toLocaleString()}؟`)) return;
+
+    // حذف جميع الصفوف التي تحتوي على نفس قيمة draw_time
+    const { error } = await supabase.from("matches").delete().eq("draw_time", drawTime);
+
+    if (error) {
+        alert("خطأ في حذف القرعة: " + error.message);
+    } else {
+        alert("✔ تم حذف القرعة بنجاح!");
+        loadDraws();
+    }
+}
+
+
+// --------------------------------------------------
+// 4. تحميل البيانات عند فتح الصفحة
+// --------------------------------------------------
+
+window.addEventListener("DOMContentLoaded",()=>{
+    showSection("tournament");
+    loadTournaments();
+    loadDraws(); // تم إضافة تحميل القرعة
+    loadAds();
+    loadBlogs();
+});
+</script>
+
+</body>
+</html>
