@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <title>تسجيل فريق جديد</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> 
 <style>
 /* ... (كود الـ CSS كما هو) ... */
 body{font-family:tahoma;background:#f5f5f5;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0}
@@ -34,11 +35,18 @@ button:hover{background:#0056b3;}
 </div>
 
 <script>
-const supabase = supabase.createClient(
-  "https://gnvbeackjfvguyivgpuo.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdudmJlYWNramZ2Z3V5aXZncHVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1NTQyMzAsImV4cCI6MjA4MTEzMDIzMH0.Df7uplEbcJa-dQnSr8n-tpHTOfzi5j0rjTCGfgIvcMw"
-);
+// ==============================================================
+// 1. إعدادات SUPABASE (تحقق من مفاتيحك مرة أخيرة)
+// ==============================================================
+// تأكد أن هذه القيم هي نفسها لـ Project URL و Anon Public Key
+const SUPABASE_URL = "https://gnvbeackjfvguyivgpuo.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdudmJlYWNramZ2Z3V5aXZncHVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1NTQyMzAsImV4cCI6MjA4MTEzMDIzMH0.Df7uplEbcJa-dQnSr8n-tpHTOfzi5j0rjTCGfgIvcMw";
 
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ==============================================================
+// 2. دالة تسجيل الفريق (Auth + Insert)
+// ==============================================================
 async function registerTeam(){
     const msg = document.getElementById("msg");
     msg.innerText="جاري تسجيل الفريق...";
@@ -63,19 +71,20 @@ async function registerTeam(){
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email: email,
             password: password,
-            // يمكن إضافة بيانات إضافية هنا إذا أردت
         });
 
         if (authError) {
             msg.className = "msg error";
             msg.innerText = `خطأ في المصادقة: ${authError.message}.`;
+            // نرسل رسالة الخطأ للمطورين في Console أيضًا
+            console.error("Auth Error:", authError); 
             return;
         }
 
         const userId = authData.user?.id;
 
         if (!userId) {
-             // يحدث إذا كانت إعدادات Supabase تتطلب تأكيد الإيميل
+            // يحدث إذا كانت إعدادات Supabase تتطلب تأكيد الإيميل
             msg.className = "msg success"; 
             msg.innerText = "تم إنشاء الحساب بنجاح. يرجى تأكيد بريدك الإلكتروني للمتابعة.";
             return;
@@ -95,15 +104,15 @@ async function registerTeam(){
              // يرجى التحقق من تفعيل RLS وإنشاء سياسة INSERT
             msg.className="msg error";
             msg.innerText=`خطأ في حفظ بيانات الفريق: ${coachError.message}.`;
-            // يفضل حذف المستخدم في هذه الحالة لتجنب الحسابات المعلقة
+            console.error("Coach Data Insert Error:", coachError);
             return;
         }
 
         msg.className="msg success";
         msg.innerText="✔ تم تسجيل الفريق بنجاح! يمكنك الآن تسجيل الدخول.";
         
-        // يمكن التوجيه إلى صفحة الدخول:
-        // setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+        // التوجيه لصفحة لوحة التحكم مباشرة
+        setTimeout(() => { window.location.href = 'coach_dashboard.html'; }, 2000);
 
     } catch (e) {
         msg.className = "msg error";
@@ -114,4 +123,4 @@ async function registerTeam(){
 </script>
 
 </body>
-  </html>
+</html>
