@@ -2,143 +2,162 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <title>تسجيل فريق جديد</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تسجيل مدرب وفريق جديد</title>
+
+    <!-- Supabase v2 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
-        body { font-family: Tahoma, sans-serif; background: #f5f5f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
-        h2 { text-align: center; color: #008cff; margin-bottom: 25px; }
-        label { display: block; margin-top: 15px; margin-bottom: 5px; font-weight: bold; }
-        input { width: 100%; padding: 12px; margin-bottom: 5px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; box-sizing: border-box; }
-        .register-btn { background: #008cff; color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; cursor: pointer; font-size: 18px; margin-top: 25px; transition: 0.3s; }
-        .register-btn:hover { background: #006bbd; }
-        .message { margin-top: 15px; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; display: none; }
-        .success-message { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .error-message { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .link { text-align: center; margin-top: 20px; }
-        .link a { color: #008cff; text-decoration: none; font-weight: bold; }
+        body {
+            font-family: Tahoma, sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .box {
+            background: #fff;
+            padding: 30px;
+            width: 100%;
+            max-width: 420px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,.1);
+        }
+        h2 {
+            text-align: center;
+            color: #008cff;
+            margin-bottom: 20px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 15px;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #008cff;
+            border: none;
+            color: #fff;
+            font-size: 17px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #006bbd;
+        }
+        .msg {
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+        .error { color: #b30000; }
+        .success { color: #0a7d32; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>انضمام وتسجيل فريق جديد</h2>
-    <form id="registrationForm">
-        <label for="email">البريد الإلكتروني (للدخول)</label>
-        <input type="email" id="email" required>
+<div class="box">
+    <h2>تسجيل فريق جديد</h2>
 
-        <label for="password">كلمة المرور (6 أحرف أو أكثر)</label>
-        <input type="password" id="password" required>
+    <input type="email" id="email" placeholder="البريد الإلكتروني">
+    <input type="password" id="password" placeholder="كلمة المرور (6 أحرف على الأقل)">
+    <input type="text" id="team" placeholder="اسم الفريق">
+    <input type="text" id="coach" placeholder="اسم المدرب">
+    <input type="text" id="state" placeholder="الولاية">
+    <input type="text" id="district" placeholder="المنطقة">
+    <input type="text" id="phone" placeholder="رقم الهاتف">
 
-        <label for="teamName">اسم الفريق</label>
-        <input type="text" id="teamName" required>
-
-        <label for="coachName">اسم المدرب</label>
-        <input type="text" id="coachName" required>
-
-        <label for="state">الولاية/المدينة</label>
-        <input type="text" id="state" placeholder="مثال: الجزائر" required>
-
-        <label for="district">الحي/المنطقة</label>
-        <input type="text" id="district" placeholder="مثال: الوسط" required>
-
-        <label for="phoneNumber">رقم الهاتف</label>
-        <input type="tel" id="phoneNumber" required>
-
-        <button type="submit" class="register-btn">تسجيل الفريق</button>
-        <div id="message" class="message"></div>
-    </form>
-
-    <div class="link">
-        هل لديك حساب بالفعل؟ <a href="login.html">تسجيل الدخول</a>
-    </div>
+    <button onclick="register()">تسجيل</button>
+    <div id="msg" class="msg"></div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const supabaseUrl = "https://gnvbeackjfvguyivgpuo.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdudmJlYWNramZ2Z3V5aXZncHVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1NTQyMzAsImV4cCI6MjA4MTEzMDIzMH0.Df7uplEbcJa-dQnSr8n-tpHTOfzi5j0rjTCGfgIvcMw";
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+/* ===== Supabase Config (كما أرسلتها تمامًا) ===== */
+const supabaseUrl = "https://gnvbeackjfvguyivgpuo.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdudmJlYWNramZ2Z3V5aXZncHVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU1NTQyMzAsImV4cCI6MjA4MTEzMDIzMH0.Df7uplEbcJa-dQnSr8n-tpHTOfzi5j0rjTCGfgIvcMw";
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-    const form = document.getElementById('registrationForm');
-    const messageDiv = document.getElementById('message');
+/* ===== Register Function ===== */
+async function register() {
+    const msg = document.getElementById("msg");
+    msg.style.display = "block";
+    msg.className = "msg";
+    msg.textContent = "جاري التسجيل...";
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const team = document.getElementById("team").value.trim();
+    const coach = document.getElementById("coach").value.trim();
+    const state = document.getElementById("state").value.trim();
+    const district = document.getElementById("district").value.trim();
+    const phone = document.getElementById("phone").value.trim();
 
-        // جمع البيانات
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value;
-        const teamName = document.getElementById('teamName').value.trim();
-        const coachName = document.getElementById('coachName').value.trim();
-        const state = document.getElementById('state').value.trim();
-        const district = document.getElementById('district').value.trim();
-        const phoneNumber = document.getElementById('phoneNumber').value.trim();
+    if (!email || !password || !team || !coach) {
+        msg.className = "msg error";
+        msg.textContent = "يرجى ملء الحقول الأساسية";
+        return;
+    }
 
-        messageDiv.style.display = 'block';
-        messageDiv.className = 'message';
-        messageDiv.textContent = 'جاري تسجيل الفريق...';
+    if (password.length < 6) {
+        msg.className = "msg error";
+        msg.textContent = "كلمة المرور يجب أن تكون 6 أحرف على الأقل";
+        return;
+    }
 
-        if (password.length < 6) {
-            messageDiv.className = 'message error-message';
-            messageDiv.textContent = 'كلمة المرور يجب أن تكون 6 أحرف أو أكثر.';
-            return;
-        }
-
-        if (!email || !teamName || !coachName) {
-            messageDiv.className = 'message error-message';
-            messageDiv.textContent = 'الرجاء ملء جميع الحقول المطلوبة.';
-            return;
-        }
-
-        try {
-            // إنشاء حساب المستخدم
-            const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
-            if (authError) {
-                messageDiv.className = 'message error-message';
-                messageDiv.textContent = `فشل إنشاء الحساب: ${authError.message}`;
-                return;
-            }
-
-            const userId = authData.user?.id;
-            if (!userId) {
-                messageDiv.className = 'message success-message';
-                messageDiv.textContent = 'تم إنشاء الحساب. تحقق من بريدك الإلكتروني لتأكيد التسجيل.';
-                return;
-            }
-
-            // إدخال بيانات الفريق
-            const { error: coachError } = await supabase.from('coaches').insert([{
-                user_id: userId,
-                team_name: teamName,
-                coach_name: coachName,
-                state,
-                district,
-                phone_number: phoneNumber,
-                registration_time: new Date().toISOString()
-            }]);
-
-            if (coachError) {
-                console.error("خطأ في حفظ بيانات الفريق:", coachError);
-                messageDiv.className = 'message error-message';
-                messageDiv.textContent = `تم إنشاء الحساب، ولكن فشل حفظ بيانات الفريق: ${coachError.message}`;
-                return;
-            }
-
-            messageDiv.className = 'message success-message';
-            messageDiv.textContent = '✔ تم تسجيل الفريق بنجاح! جاري التوجيه...';
-
-            setTimeout(() => window.location.href = 'coach_dashboard.html', 2000);
-
-        } catch (err) {
-            console.error("خطأ غير متوقع:", err);
-            messageDiv.className = 'message error-message';
-            messageDiv.textContent = `حدث خطأ غير متوقع: ${err.message}`;
-        }
+    /* 1️⃣ إنشاء حساب */
+    const { data, error } = await supabase.auth.signUp({
+        email,
+        password
     });
-});
+
+    if (error) {
+        msg.className = "msg error";
+        msg.textContent = error.message;
+        return;
+    }
+
+    const userId = data.user?.id;
+
+    if (!userId) {
+        msg.className = "msg success";
+        msg.textContent = "تم التسجيل، تحقق من بريدك الإلكتروني";
+        return;
+    }
+
+    /* 2️⃣ إدخال بيانات الفريق */
+    const { error: insertError } = await supabase
+        .from("coaches")
+        .insert({
+            user_id: userId,
+            team_name: team,
+            coach_name: coach,
+            state: state,
+            district: district,
+            phone_number: phone
+        });
+
+    if (insertError) {
+        msg.className = "msg error";
+        msg.textContent = insertError.message;
+        return;
+    }
+
+    msg.className = "msg success";
+    msg.textContent = "✔ تم تسجيل الفريق بنجاح";
+
+    setTimeout(() => {
+        window.location.href = "login.html";
+    }, 1500);
+}
 </script>
 
 </body>
-</html>
+    </html>
